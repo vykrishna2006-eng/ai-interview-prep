@@ -24,12 +24,11 @@ export default function Login() {
       toast.error(res.message)
     }
   }
-
-const API_URL = import.meta.env.VITE_API_URL;
-
-const handleOAuth = (provider) => {
-    window.location.href = `${API_URL}/auth/${provider}`;
+  const handleOAuth = (provider) => {
+  window.location.href = `https://ai-interview-prep-oqw6.onrender.com/api/auth/${provider}`;
 };
+
+
   const oauthError = searchParams.get('error')
 
   return (
