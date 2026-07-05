@@ -1,0 +1,133 @@
+const PDFDocument = require('pdfkit');
+const fs = require('fs');
+const path = require('path');
+
+const generateTestReportPDF = (testResult, user, outputPath) => {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
+    const stream = fs.createWriteStream(outputPath);
+    doc.pipe(stream);
+
+    const colors = {
+      primary: '#6C63FF',
+      dark: '#1a1a2e',
+      success: '#10B981',
+      danger: '#EF4444',
+      gray: '#6B7280',
+      light: '#F3F4F6'
+    };
+
+    // Header
+    doc.rect(0, 0, 595, 100).fill(colors.primary);
+    doc.fillColor('white').fontSize(28).font('Helvetica-Bold')
+      .text('InterviewGen AI', 50, 25);
+    doc.fontSize(14).font('Helvetica')
+      .text('Interview Test Report', 50, 60);
+    doc.fillColor(colors.dark);
+
+    // Candidate Info
+    doc.moveDown(2);
+    doc.fontSize(18).font('Helvetica-Bold').fillColor(colors.dark)
+      .text('Candidate Information', 50, 120);
+    doc.moveTo(50, 142).lineTo(545, 142).stroke(colors.primary);
+
+    doc.fontSize(12).font('Helvetica').fillColor(colors.dark);
+    doc.text(`Name     : ${user.name}`, 50, 155);
+    doc.text(`Email    : ${user.email}`, 50, 172);
+    doc.text(`Date     : ${new Date(testResult.createdAt).toLocaleDateString('en-IN')}`, 50, 189);
+    doc.text(`Status   : Completed`, 50, 206);
+
+    // Overall Score
+    doc.moveDown(1);
+    doc.rect(50, 230, 495, 70).fill(colors.light).stroke(colors.primary);
+    doc.fontSize(16).font('Helvetica-Bold').fillColor(colors.primary)
+      .text('Overall Score', 70, 245);
+    doc.fontSize(28).font('Helvetica-Bold').fillColor(colors.dark)
+      .text(`${testResult.overallPercentage}%`, 70, 265);
+    doc.fontSize(12).fillColor(colors.gray)
+      .text(`${testResult.correct} / ${testResult.totalQuestions} questions correct`, 200, 275);
+
+    // Section Results
+    doc.moveDown(2);
+    doc.fontSize(18).font('Helvetica-Bold').fillColor(colors.dark)
+      .text('Section-wise Results', 50, 320);
+    doc.moveTo(50, 342).lineTo(545, 342).stroke(colors.primary);
+
+    let yPos = 355;
+    testResult.sectionResults.forEach((section) => {
+      const color = section.percentage >= 70 ? colors.success :
+                    section.percentage >= 50 ? '#F59E0B' : colors.danger;
+
+      doc.fontSize(12).font('Helvetica-Bold').fillColor(colors.dark)
+        .text(section.skill, 50, yPos);
+      doc.fontSize(12).font('Helvetica').fillColor(color)
+        .text(`${section.score}/${section.maxScore}  (${section.percentage}%)`, 300, yPos);
+      doc.moveTo(50, yPos + 18).lineTo(545, yPos + 18).stroke('#E5E7EB');
+      yPos += 25;
+
+      if (yPos > 750) {
+        doc.addPage();
+        yPos = 50;
+      }
+    });
+
+    // Question Details
+    doc.addPage();
+    doc.fontSize(18).font('Helvetica-Bold').fillColor(colors.dark)
+      .text('Detailed Question Analysis', 50, 50);
+    doc.moveTo(50, 72).lineTo(545, 72).stroke(colors.primary);
+
+    yPos = 90;
+    testResult.answers.forEach((ans, idx) => {
+      if (yPos > 680) { doc.addPage(); yPos = 50; }
+
+      const statusColor = ans.isCorrect ? colors.success : colors.danger;
+      const statusText = ans.isCorrect ? '✓ CORRECT' : '✗ INCORRECT';
+
+      doc.rect(50, yPos, 495, 20).fill(ans.isCorrect ? '#D1FAE5' : '#FEE2E2');
+      doc.fontSize(11).font('Helvetica-Bold').fillColor(colors.dark)
+        .text(`Q${idx + 1}. [${ans.skill}]  ${statusText}  –  ${ans.score}/5`, 55, yPos + 4);
+      yPos += 25;
+
+      doc.fontSize(10).font('Helvetica-Bold').fillColor(colors.dark)
+        .text('Question:', 55, yPos);
+      doc.fontSize(10).font('Helvetica').fillColor(colors.dark)
+        .text(ans.question, 55, yPos + 14, { width: 485 });
+      yPos += 14 + doc.heightOfString(ans.question, { width: 485 }) + 5;
+
+      doc.fontSize(10).font('Helvetica-Bold').fillColor(colors.gray)
+        .text('Your Answer:', 55, yPos);
+      const yourAns = ans.userAnswer || 'Not answered';
+      doc.fontSize(10).font('Helvetica').fillColor(colors.gray)
+        .text(yourAns, 55, yPos + 14, { width: 485 });
+      yPos += 14 + doc.heightOfString(yourAns, { width: 485 }) + 5;
+
+      doc.fontSize(10).font('Helvetica-Bold').fillColor(colors.success)
+        .text('Ideal Answer:', 55, yPos);
+      doc.fontSize(10).font('Helvetica').fillColor(colors.dark)
+        .text(ans.idealAnswer, 55, yPos + 14, { width: 485 });
+      yPos += 14 + doc.heightOfString(ans.idealAnswer, { width: 485 }) + 5;
+
+      if (ans.aiFeedback) {
+        doc.fontSize(10).font('Helvetica-Bold').fillColor(colors.primary)
+          .text('AI Feedback:', 55, yPos);
+        doc.fontSize(10).font('Helvetica').fillColor(colors.dark)
+          .text(ans.aiFeedback, 55, yPos + 14, { width: 485 });
+        yPos += 14 + doc.heightOfString(ans.aiFeedback, { width: 485 }) + 5;
+      }
+
+      doc.moveTo(50, yPos).lineTo(545, yPos).stroke('#E5E7EB');
+      yPos += 15;
+    });
+
+    // Footer
+    doc.fontSize(10).fillColor(colors.gray)
+      .text('Generated by InterviewGen AI  •  interviewgen.ai', 50, 800, { align: 'center' });
+
+    doc.end();
+    stream.on('finish', () => resolve(outputPath));
+    stream.on('error', reject);
+  });
+};
+
+module.exports = { generateTestReportPDF };
