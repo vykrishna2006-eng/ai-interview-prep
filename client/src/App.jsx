@@ -17,6 +17,7 @@ import Profile from './pages/Profile'
 import CompanyPrep from './pages/CompanyPrep'
 import CompanyDetail from './pages/CompanyDetail'
 
+
 const ProtectedRoute = ({ children }) => {
   const { token } = useAuthStore()
   return token ? children : <Navigate to="/login" replace />
@@ -64,6 +65,7 @@ export default function App() {
         <Route path="/company-prep" element={<ProtectedRoute><CompanyPrep /></ProtectedRoute>} />
         <Route path="/company/:name" element={<ProtectedRoute><CompanyDetail /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
+        
       </Routes>
     </BrowserRouter>
   )
