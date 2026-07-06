@@ -7,12 +7,14 @@ import Navbar from '../components/Navbar'
 import api from '../utils/api'
 import useAuthStore from '../store/authStore'
 
-// Base URL for downloading generated files from the backend.
-// Falls back to localhost:5000 for local dev; override with VITE_API_BASE_URL in production.
-const API_BASE_URL =
+// Base URL of the backend API (e.g. "https://.../api" or "http://localhost:5000/api").
+const API_URL =
   import.meta.env.VITE_API_BASE_URL ||
   import.meta.env.VITE_API_URL ||
   "https://ai-interview-prep-oqw6.onrender.com/api";
+
+// Origin only, no "/api" suffix — used to build download links.
+const API_ORIGIN = API_URL.replace(/\/api\/?$/, "");
 
 export default function ResumeBuilder() {
   const { user } = useAuthStore()
@@ -57,8 +59,10 @@ export default function ResumeBuilder() {
         return
       }
 
-      // Keep the AI-generated resume data AND the backend's downloadUrl together,
-      // instead of discarding downloadUrl like before.
+      // Keep the AI-generated resume data AND the backend's downloadUrl together.
+      // downloadUrl from the backend is now a RELATIVE path
+      // (e.g. "/api/resume-builder/download/Yaswanth_12345.docx"),
+      // never a full URL — so it's safe to prepend the origin exactly once.
       setResumeData({
         ...res.data.resumeData,
         downloadUrl: res.data.downloadUrl
@@ -73,22 +77,29 @@ export default function ResumeBuilder() {
   }
 
   const handleWordDownload = () => {
-  if (!resumeData?.downloadUrl) {
-    toast.error("Resume not generated yet");
-    return;
+    if (!resumeData?.downloadUrl) {
+      toast.error("Resume not generated yet")
+      return
+    }
+
+    // Build the full URL exactly once: origin + the relative path the backend gave us.
+    const url = `${API_ORIGIN}${resumeData.downloadUrl}`
+
+    console.log("Download URL:", url)
+
+    // Use a real, temporary <a download> click instead of window.open.
+    // The backend route sets Content-Disposition: attachment, so this
+    // reliably triggers a "Save to disk" download in every browser,
+    // instead of sometimes opening a blank/empty tab.
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `${(resumeData.name || form.name || 'Resume').replace(/\s+/g, '_')}_Resume.docx`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    toast.success("Downloading Resume...")
   }
-
-  // Remove "/api" from the backend URL because uploads are served from the root.
-  const backendUrl = API_BASE_URL.replace("/api", "");
-
-  const url = `${backendUrl}${resumeData.downloadUrl}`;
-
-  console.log("Download URL:", url);
-
-  window.open(url, "_blank");
-
-  toast.success("Downloading Resume...");
-};
 
   const handleOverleaf = async () => {
     try {
