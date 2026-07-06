@@ -69,6 +69,10 @@ app.use("/api/evaluate", require("./routes/evaluate"));
 app.use("/api/report", require("./routes/report"));
 app.use("/api/resume-builder", require("./routes/resumeBuilder"));
 app.use("/api/dashboard", require("./routes/dashboard"));
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "uploads"))
+);
 
 // ===============================
 // Health Check

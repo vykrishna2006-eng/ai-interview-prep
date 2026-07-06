@@ -306,16 +306,15 @@ router.post("/generate", protect, async (req, res) => {
     const file = await generateResumeDocx(resumeData);
 
     // Send response
-    return res.json({
+    const baseUrl =
+  process.env.SERVER_URL ||
+  `${req.protocol}://${req.get("host")}`;
 
-      success: true,
-
-      resumeData,
-
-      downloadUrl: `/uploads/resumes/${file}`
-
-    });
-
+return res.json({
+  success: true,
+  resumeData,
+  downloadUrl: `${baseUrl}/uploads/resumes/${file}`
+});
   } catch (err) {
 
     console.log("\n===== Resume Builder Error =====");

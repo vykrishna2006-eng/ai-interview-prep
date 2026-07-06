@@ -681,19 +681,30 @@ function professionalHeader(resume) {
 // ==========================================
 
 async function saveResume(document, resume) {
-    const buffer = await Packer.toBuffer(document);
+    try {
+        const buffer = await Packer.toBuffer(document);
 
-    const safeName = (resume.name || "Resume").replace(/[^a-zA-Z0-9]/g, "_");
+        const safeName = (resume.name || "Resume").replace(/[^a-zA-Z0-9]/g, "_");
 
-    const filename = `${safeName}_${Date.now()}.docx`;
+        const filename = `${safeName}_${Date.now()}.docx`;
 
-    const filepath = path.join(resumeFolder, filename);
+        const filepath = path.join(resumeFolder, filename);
 
-    fs.writeFileSync(filepath, buffer);
+        console.log("Saving to:");
+        console.log(filepath);
 
-    return filename;
+        fs.writeFileSync(filepath, buffer);
+
+        console.log("File Saved Successfully");
+        console.log("Exists:", fs.existsSync(filepath));
+
+        return filename;
+    } catch (err) {
+        console.error("SAVE ERROR:");
+        console.error(err);
+        throw err;
+    }
 }
-
 // ==========================================
 // Build Complete Resume
 // ==========================================
