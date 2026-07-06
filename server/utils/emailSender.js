@@ -1,13 +1,40 @@
 const nodemailer = require('nodemailer');
 const fs = require('fs');
 
+// Gmail App Passwords are displayed by Google as "xxxx xxxx xxxx xxxx" with
+// spaces for readability, but those spaces should NOT be part of the actual
+// credential sent to the SMTP server. If EMAIL_PASS was copy-pasted straight
+// from Google (or typed into Render with spaces preserved), strip them here
+// so auth doesn't fail on a literal space character.
+const emailUser = (process.env.EMAIL_USER || '').trim();
+const emailPass = (process.env.EMAIL_PASS || '').replace(/\s+/g, '');
+
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
+    user: emailUser,
+    pass: emailPass
   }
 });
+
+// Verify the SMTP connection once at server startup instead of only
+// discovering a broken config the first time someone finishes a test.
+// This does NOT throw or crash the server — it just logs a clear,
+// actionable message so you don't have to guess why email isn't sending.
+if (!emailUser || !emailPass) {
+  console.warn('⚠️  EMAIL_USER or EMAIL_PASS is missing — report emails will fail.');
+} else {
+  transporter.verify((err) => {
+    if (err) {
+      console.error('❌ Email transporter verification FAILED:', err.message);
+      console.error('   Most common cause: EMAIL_PASS is not a valid Gmail App Password.');
+      console.error('   Generate one at: https://myaccount.google.com/apppasswords');
+      console.error('   (Requires 2-Step Verification to be enabled on the Gmail account.)');
+    } else {
+      console.log(`✅ Email transporter verified — ready to send as ${emailUser}`);
+    }
+  });
+}
 
 const sendTestReportEmail = async (user, testResult, pdfPath) => {
   const sectionRows = testResult.sectionResults.map(s =>
@@ -21,7 +48,7 @@ const sendTestReportEmail = async (user, testResult, pdfPath) => {
   ).join('');
 
   const mailOptions = {
-    from: `"InterviewGen AI" <${process.env.EMAIL_USER}>`,
+    from: `"InterviewGen AI" <${emailUser}>`,
     to: user.email,
     subject: '🎯 Your Interview Test Report – InterviewGen AI',
     html: `

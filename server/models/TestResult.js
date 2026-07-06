@@ -35,7 +35,11 @@ const testResultSchema = new mongoose.Schema({
   correct: { type: Number, default: 0 },
   status: { type: String, enum: ['in-progress', 'completed'], default: 'in-progress' },
   pdfPath: { type: String },
-  emailSent: { type: Boolean, default: false }
+  emailSent: { type: Boolean, default: false },
+  // Stores the actual nodemailer/SMTP error message when email sending fails,
+  // so the frontend/user can see WHY it's stuck on "Email Pending" instead of
+  // it failing silently forever.
+  emailError: { type: String, default: null }
 }, { timestamps: true });
 
 module.exports = mongoose.model('TestResult', testResultSchema);

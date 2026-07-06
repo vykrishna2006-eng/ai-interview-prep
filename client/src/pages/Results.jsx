@@ -6,7 +6,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell,
   PieChart, Pie, Legend
 } from 'recharts'
-import { FiDownload, FiMail, FiHome, FiRepeat } from 'react-icons/fi'
+import { FiDownload, FiMail, FiHome, FiRepeat, FiRefreshCw } from 'react-icons/fi'
 import Navbar from '../components/Navbar'
 import api from '../utils/api'
 import toast from 'react-hot-toast'
@@ -16,6 +16,8 @@ export default function Results() {
   const { state } = useLocation()
   const [result, setResult] = useState(state?.result || null)
   const [loading, setLoading] = useState(!state?.result)
+  const [downloading, setDownloading] = useState(false)
+  const [resendingEmail, setResendingEmail] = useState(false)
 
   useEffect(() => {
     if (!result) {
@@ -26,9 +28,49 @@ export default function Results() {
     }
   }, [testId])
 
-  const handleDownloadPDF = () => {
-    window.open(`/api/report/pdf/${testId}`, '_blank')
-    toast.success('Downloading PDF report...')
+  const handleDownloadPDF = async () => {
+    setDownloading(true)
+    try {
+      // Go through the authenticated `api` instance (adds the Bearer token
+      // and hits the real backend origin) instead of a plain window.open on
+      // a relative "/api/..." path — that bypassed auth entirely and, in
+      // production, never even reached the backend, landing back on /login.
+      const res = await api.get(`/report/pdf/${testId}`, { responseType: 'blob' })
+
+      const blob = new Blob([res.data], { type: 'application/pdf' })
+      const url = window.URL.createObjectURL(blob)
+
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `InterviewReport_${testId}.pdf`)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+
+      toast.success('PDF downloaded!')
+    } catch (err) {
+      toast.error('Could not download PDF: ' + (err.response?.data?.message || err.message))
+    } finally {
+      setDownloading(false)
+    }
+  }
+
+  const handleResendEmail = async () => {
+    setResendingEmail(true)
+    try {
+      const res = await api.post(`/report/resend/${testId}`)
+      setResult(prev => ({ ...prev, emailSent: true, emailError: null }))
+      toast.success(res.data.message || 'Email sent!')
+    } catch (err) {
+      const message = err.response?.data?.message || err.message
+      setResult(prev => ({ ...prev, emailSent: false, emailError: message }))
+      // Surface the REAL reason instead of leaving the user stuck on
+      // "Email Pending" forever with no explanation.
+      toast.error('Email failed: ' + message, { duration: 6000 })
+    } finally {
+      setResendingEmail(false)
+    }
   }
 
   if (loading) return (
@@ -138,14 +180,37 @@ export default function Results() {
 
           {/* Actions */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <button onClick={handleDownloadPDF} className="card hover:border-primary-500/40 transition-all flex flex-col items-center gap-2 py-4 cursor-pointer">
-              <FiDownload size={20} className="text-primary-400" />
-              <span className="text-sm font-medium">Download PDF</span>
+            <button onClick={handleDownloadPDF} disabled={downloading}
+              className="card hover:border-primary-500/40 transition-all flex flex-col items-center gap-2 py-4 cursor-pointer disabled:opacity-50">
+              {downloading
+                ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                : <FiDownload size={20} className="text-primary-400" />}
+              <span className="text-sm font-medium">{downloading ? 'Downloading...' : 'Download PDF'}</span>
             </button>
-            <div className="card flex flex-col items-center gap-2 py-4">
-              <FiMail size={20} className="text-emerald-400" />
-              <span className="text-sm font-medium text-center">{result.emailSent ? 'Email Sent ✅' : 'Email Pending'}</span>
-            </div>
+
+            <button
+              onClick={result.emailSent ? undefined : handleResendEmail}
+              disabled={resendingEmail || result.emailSent}
+              title={result.emailError || ''}
+              className={`card flex flex-col items-center gap-2 py-4 transition-all disabled:opacity-100 ${
+                result.emailSent ? '' : 'hover:border-amber-500/40 cursor-pointer'
+              }`}
+            >
+              {resendingEmail
+                ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                : result.emailSent
+                  ? <FiMail size={20} className="text-emerald-400" />
+                  : <FiRefreshCw size={20} className="text-amber-400" />}
+              <span className="text-sm font-medium text-center">
+                {resendingEmail ? 'Sending...' : result.emailSent ? 'Email Sent ✅' : 'Retry Email'}
+              </span>
+              {!result.emailSent && result.emailError && (
+                <span className="text-[10px] text-red-400 text-center leading-tight px-1">
+                  {result.emailError}
+                </span>
+              )}
+            </button>
+
             <Link to="/upload-resume" className="card hover:border-primary-500/40 transition-all flex flex-col items-center gap-2 py-4">
               <FiRepeat size={20} className="text-purple-400" />
               <span className="text-sm font-medium">New Test</span>
