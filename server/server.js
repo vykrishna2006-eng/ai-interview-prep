@@ -34,8 +34,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Static folder
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+const uploadsPath = path.join(__dirname, "uploads");
 
+console.log("Serving uploads from:", uploadsPath);
+
+app.use("/uploads", express.static(uploadsPath));
 // ===============================
 // Session
 // ===============================

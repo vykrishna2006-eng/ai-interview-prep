@@ -694,6 +694,8 @@ async function saveResume(document, resume) {
         console.log(filepath);
 
         fs.writeFileSync(filepath, buffer);
+        console.log("File exists:", fs.existsSync(filepath));
+        console.log("Saved file:", filename);
 
         console.log("File Saved Successfully");
         console.log("Exists:", fs.existsSync(filepath));

@@ -9,7 +9,7 @@ import useAuthStore from '../store/authStore'
 
 // Base URL for downloading generated files from the backend.
 // Falls back to localhost:5000 for local dev; override with VITE_API_BASE_URL in production.
-const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL || 'http://localhost:5000'
+const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL 
 
 export default function ResumeBuilder() {
   const { user } = useAuthStore()
