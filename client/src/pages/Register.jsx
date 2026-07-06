@@ -30,15 +30,20 @@ export default function Register() {
   }
 
   const onSubmit = async (data) => {
-    const res = await registerUser(data.name, data.email, data.password)
-    if (res.success) {
-      toast.success('Account created! Let\'s get you interview-ready 🚀')
-      navigate('/dashboard')
-    } else {
-      toast.error(res.message)
-    }
-  }
+  console.log("FORM SUBMITTED");
+  console.log(data);
 
+  const res = await registerUser(data.name, data.email, data.password);
+
+  console.log("REGISTER RESPONSE:", res);
+
+  if (res.success) {
+    toast.success("Account created!");
+    navigate("/dashboard");
+  } else {
+    toast.error(res.message);
+  }
+};
   const API_URL = import.meta.env.VITE_API_URL
 
 const handleOAuth = (provider) => {

@@ -29,19 +29,47 @@ const useAuthStore = create(
         }
       },
 
-      register: async (name, email, password) => {
-        set({ isLoading: true, error: null })
-        try {
-          const res = await api.post('/auth/register', { name, email, password })
-          localStorage.setItem('token', res.data.token)
-          set({ user: res.data.user, token: res.data.token, isLoading: false })
-          return { success: true }
-        } catch (err) {
-          const msg = err.response?.data?.message || 'Registration failed'
-          set({ error: msg, isLoading: false })
-          return { success: false, message: msg }
-        }
-      },
+    register: async (name, email, password) => {
+  console.log("Calling API...");
+  console.log("API URL:", import.meta.env.VITE_API_URL);
+
+  set({ isLoading: true, error: null });
+
+  try {
+    const res = await api.post("/auth/register", {
+      name,
+      email,
+      password,
+    });
+
+    console.log("SUCCESS:", res.data);
+
+    localStorage.setItem("token", res.data.token);
+
+    set({
+      user: res.data.user,
+      token: res.data.token,
+      isLoading: false,
+    });
+
+    return { success: true };
+  } catch (err) {
+    console.log("ERROR:", err);
+    console.log("ERROR RESPONSE:", err.response);
+
+    const msg = err.response?.data?.message || "Registration failed";
+
+    set({
+      error: msg,
+      isLoading: false,
+    });
+
+    return {
+      success: false,
+      message: msg,
+    };
+  }
+},
 
       fetchUser: async () => {
         const token = localStorage.getItem('token')
