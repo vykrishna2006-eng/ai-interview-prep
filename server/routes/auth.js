@@ -45,8 +45,15 @@ router.post('/register', async (req, res) => {
     const user = await User.create({ name, email, password, provider: 'local', isVerified: true });
     sendTokenResponse(user, res);
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+  console.error("========== REGISTER ERROR ==========");
+  console.error(err);
+
+  return res.status(500).json({
+    success: false,
+    message: err.message,
+    stack: err.stack,
+  });
+}
 });
 
 // Login

@@ -39,7 +39,11 @@ export default function Register() {
     }
   }
 
-  const handleOAuth = (provider) => { window.location.href = `/api/auth/${provider}` }
+  const API_URL = import.meta.env.VITE_API_URL
+
+const handleOAuth = (provider) => {
+  window.location.href = `${API_URL}/auth/${provider}`
+}
 
   return (
     <div className="animated-bg min-h-screen flex items-center justify-center px-4 py-8">
