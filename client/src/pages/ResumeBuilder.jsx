@@ -9,7 +9,10 @@ import useAuthStore from '../store/authStore'
 
 // Base URL for downloading generated files from the backend.
 // Falls back to localhost:5000 for local dev; override with VITE_API_BASE_URL in production.
-const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL 
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_API_URL ||
+  "https://ai-interview-prep-oqw6.onrender.com/api";
 
 export default function ResumeBuilder() {
   const { user } = useAuthStore()
@@ -70,16 +73,22 @@ export default function ResumeBuilder() {
   }
 
   const handleWordDownload = () => {
-    if (!resumeData?.downloadUrl) {
-      toast.error('Resume not generated yet')
-      return
-    }
-
-    // Just open the .docx that the backend already built with generator.js —
-    // no more regenerating it client-side with docx/file-saver.
-    window.open(`${API_BASE_URL}${resumeData.downloadUrl}`, '_blank')
-    toast.success('Downloading Resume...')
+  if (!resumeData?.downloadUrl) {
+    toast.error("Resume not generated yet");
+    return;
   }
+
+  // Remove "/api" from the backend URL because uploads are served from the root.
+  const backendUrl = API_BASE_URL.replace("/api", "");
+
+  const url = `${backendUrl}${resumeData.downloadUrl}`;
+
+  console.log("Download URL:", url);
+
+  window.open(url, "_blank");
+
+  toast.success("Downloading Resume...");
+};
 
   const handleOverleaf = async () => {
     try {
