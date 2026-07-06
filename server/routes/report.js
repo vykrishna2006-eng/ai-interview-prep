@@ -64,9 +64,9 @@ router.post('/submit/:testId', protect, async (req, res) => {
       test.emailSent = false;
       test.emailError = emailErr.message;
       console.error('❌ Email send failed:', emailErr.message);
-      console.error('   Check EMAIL_USER / EMAIL_PASS in your .env — for Gmail this');
-      console.error('   MUST be a 16-character App Password, not your normal password.');
-      console.error('   Generate one at: https://myaccount.google.com/apppasswords');
+      console.error('   Check BREVO_API_KEY and EMAIL_USER in your .env —');
+      console.error('   EMAIL_USER must be a verified sender in Brevo.');
+      console.error('   Check senders at: https://app.brevo.com/senders');
     }
 
     await test.save();
@@ -90,7 +90,7 @@ router.post('/submit/:testId', protect, async (req, res) => {
   }
 });
 
-// Manually re-attempt sending the report email (e.g. after fixing EMAIL_USER/EMAIL_PASS).
+// Manually re-attempt sending the report email (e.g. after fixing BREVO_API_KEY/EMAIL_USER).
 router.post('/resend/:testId', protect, async (req, res) => {
   try {
     const test = await TestResult.findById(req.params.testId);
